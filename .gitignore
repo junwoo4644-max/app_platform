@@ -1,0 +1,24 @@
+# lot_platform and leaf_area are each their own separate git repo (own GitHub
+# remote, own history) deployed independently -- not part of this repo. This
+# repo only holds the portal itself plus the server-1 orchestration files
+# (docker-compose.yml, nginx/) that reference them as sibling directories.
+lot platform/
+leaf_area/
+
+# secrets / local env
+.env
+.env.local
+portal/.env
+portal/.env.local
+
+# portal (Next.js)
+portal/node_modules/
+portal/.next/
+portal/data/
+portal/next-env.d.ts
+
+# claude code session metadata
+.claude/
+
+# OS
+.DS_Store

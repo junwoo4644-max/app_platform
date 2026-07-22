@@ -1,0 +1,68 @@
+# Server 1 stack: portal + leaf_area, sharing one Docker network.
+# Only `nginx` publishes ports to the host; every app service is internal-only
+# (see nginx/nginx.conf for how requests are routed and how to add a new app).
+#
+# lot_platform is NOT here on purpose -- it runs on its own server with its
+# own compose file (see "lot platform/docker-compose.prod.yml"). The portal
+# links to it purely as a URL registered in /admin, no compose wiring needed.
+
+name: app-platform-server1
+
+services:
+  portal:
+    build: ./portal
+    volumes:
+      - portal_data:/app/data
+    environment:
+      DATABASE_URL: file:/app/data/portal.db
+      DATA_DIR: /app/data
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+    restart: unless-stopped
+
+  leaf-area-backend:
+    build: ./leaf_area/backend
+    volumes:
+      - leaf_area_backend_data:/app/data
+      - leaf_area_easyocr_models:/root/.EasyOCR
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  leaf-area-frontend:
+    build:
+      context: ./leaf_area/frontend
+      args:
+        VITE_API_BASE_URL: ""
+    depends_on:
+      leaf-area-backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "80:80"
+      - "8081:8081"
+    depends_on:
+      - portal
+      - leaf-area-frontend
+    restart: unless-stopped
+
+  # ---- 새 앱을 추가할 때 (템플릿, 필요시 복사해서 사용) ----
+  # new-app-frontend:
+  #   build: ./new-app
+  #   restart: unless-stopped
+
+volumes:
+  portal_data:
+  leaf_area_backend_data:
+  leaf_area_easyocr_models:

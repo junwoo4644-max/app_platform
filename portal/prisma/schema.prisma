@@ -1,0 +1,30 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+}
+
+// Registry of apps shown on the portal home page. Adding a future app is a
+// data change here (via /admin), not a code/redeploy change to this project.
+model App {
+  id           String   @id @default(cuid())
+  slug         String   @unique
+  name         String
+  description  String
+  thumbnailUrl String?
+  externalUrl  String
+  sortOrder    Int      @default(0)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
