@@ -11,6 +11,10 @@ model User {
   id        String   @id @default(cuid())
   email     String   @unique
   password  String
+  // "admin" can manage the app catalog and other users; "user" can browse
+  // and download/open apps once logged in. Plain string, not an enum, since
+  // sqlite has no native enum type.
+  role      String   @default("user")
   createdAt DateTime @default(now())
 }
 

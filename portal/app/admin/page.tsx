@@ -2,15 +2,18 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import TopBar from '@/components/TopBar';
+import AdminNav from '@/components/AdminNav';
 import { createApp, deleteApp, toggleActive } from './actions';
 
 export default async function AdminPage() {
   const session = await getServerSession(authOptions);
+  const user = session?.user as { email?: string | null; role?: string } | undefined;
   const apps = await prisma.app.findMany({ orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }] });
 
   return (
     <div className="page">
-      <TopBar email={session?.user?.email} isAdminPage />
+      <TopBar email={user?.email} role={user?.role} isAdminPage />
+      <AdminNav active="apps" />
 
       <div className="card">
         <div className="section-title" style={{ marginTop: 0 }}>
