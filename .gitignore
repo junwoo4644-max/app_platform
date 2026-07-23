@@ -11,6 +11,11 @@ leaf_area/
 portal/.env
 portal/.env.local
 
+# SSH keys should never live inside a repo folder in the first place
+*.pem
+*.key
+ssh-key-*
+
 # portal (Next.js)
 portal/node_modules/
 portal/.next/

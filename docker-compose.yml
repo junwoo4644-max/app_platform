@@ -28,6 +28,14 @@ services:
       - leaf_area_backend_data:/app/data
       - leaf_area_easyocr_models:/root/.EasyOCR
     restart: unless-stopped
+    # leaf_area/frontend/nginx.conf hardcodes proxy_pass to a host literally
+    # named "backend" -- alias it here instead of renaming the service, so
+    # leaf_area's own repo doesn't need to know about this compose file's
+    # naming (which prefixes services to avoid collisions with future apps).
+    networks:
+      default:
+        aliases:
+          - backend
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"]
       interval: 30s
