@@ -8,7 +8,12 @@ export default async function AppDetailPage({ params }: { params: { slug: string
   const session = await getServerSession(authOptions);
   const user = session?.user as { email?: string | null; role?: string } | undefined;
 
-  const app = await prisma.app.findUnique({ where: { slug: params.slug } });
+  // Next.js doesn't always decode non-ASCII (e.g. Korean) dynamic-segment
+  // params for us -- app.slug can contain those characters (see slugify()),
+  // so decode explicitly or lookups for such slugs 404 even though the row
+  // exists.
+  const slug = decodeURIComponent(params.slug);
+  const app = await prisma.app.findUnique({ where: { slug } });
   if (!app || !app.isActive) notFound();
 
   const isDownload = !!app.downloadUrl;
