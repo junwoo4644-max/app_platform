@@ -1,9 +1,13 @@
-# Server 1 stack: portal + leaf_area, sharing one Docker network.
+# Server 1 stack: just the portal for now.
 # Only `nginx` publishes ports to the host; every app service is internal-only
 # (see nginx/nginx.conf for how requests are routed and how to add a new app).
 #
-# lot_platform is NOT here on purpose -- it runs on its own server with its
-# own compose file (see "lot platform/docker-compose.prod.yml"). The portal
+# leaf_area is NOT here -- it's being repackaged as a downloadable local-run
+# bundle instead of a hosted service (this tiny instance doesn't have enough
+# RAM for its torch/opencv/easyocr pipeline). See leaf_area/README.md.
+#
+# lot_platform is NOT here either -- it runs on its own server with its own
+# compose file (see "lot platform/docker-compose.prod.yml"). The portal
 # links to it purely as a URL registered in /admin, no compose wiring needed.
 
 name: app-platform-server1
@@ -22,47 +26,14 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
     restart: unless-stopped
 
-  leaf-area-backend:
-    build: ./leaf_area/backend
-    volumes:
-      - leaf_area_backend_data:/app/data
-      - leaf_area_easyocr_models:/root/.EasyOCR
-    restart: unless-stopped
-    # leaf_area/frontend/nginx.conf hardcodes proxy_pass to a host literally
-    # named "backend" -- alias it here instead of renaming the service, so
-    # leaf_area's own repo doesn't need to know about this compose file's
-    # naming (which prefixes services to avoid collisions with future apps).
-    networks:
-      default:
-        aliases:
-          - backend
-    healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
-
-  leaf-area-frontend:
-    build:
-      context: ./leaf_area/frontend
-      args:
-        VITE_API_BASE_URL: ""
-    depends_on:
-      leaf-area-backend:
-        condition: service_healthy
-    restart: unless-stopped
-
   nginx:
     image: nginx:alpine
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
     ports:
       - "80:80"
-      - "8081:8081"
     depends_on:
       - portal
-      - leaf-area-frontend
     restart: unless-stopped
 
   # ---- 새 앱을 추가할 때 (템플릿, 필요시 복사해서 사용) ----
@@ -72,5 +43,3 @@ services:
 
 volumes:
   portal_data:
-  leaf_area_backend_data:
-  leaf_area_easyocr_models:
