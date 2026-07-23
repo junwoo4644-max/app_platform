@@ -8,21 +8,28 @@ import { prisma } from '@/lib/prisma';
 import { slugify } from '@/lib/slugify';
 import { UPLOADS_DIR } from '@/lib/dataDir';
 
-async function saveThumbnail(file: File): Promise<string> {
+// Stored as "<uuid>__<original-name>" so the download route can recover a
+// human-readable filename without a DB lookup.
+async function saveUpload(file: File): Promise<string> {
   await mkdir(UPLOADS_DIR, { recursive: true });
-  const ext = path.extname(file.name) || '.png';
-  const filename = `${randomUUID()}${ext}`;
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_') || 'file';
+  const filename = `${randomUUID()}__${safeName}`;
   const buffer = Buffer.from(await file.arrayBuffer());
   await writeFile(path.join(UPLOADS_DIR, filename), buffer);
   return `/uploads/${filename}`;
 }
 
-async function resolveThumbnailUrl(formData: FormData, existing?: string | null): Promise<string | null> {
-  const file = formData.get('thumbnailFile');
+async function resolveFileUrl(
+  formData: FormData,
+  fileField: string,
+  urlField: string,
+  existing?: string | null
+): Promise<string | null> {
+  const file = formData.get(fileField);
   if (file instanceof File && file.size > 0) {
-    return saveThumbnail(file);
+    return saveUpload(file);
   }
-  const url = (formData.get('thumbnailUrl') as string | null)?.trim();
+  const url = (formData.get(urlField) as string | null)?.trim();
   if (url) return url;
   return existing ?? null;
 }
@@ -38,6 +45,12 @@ async function uniqueSlug(name: string, ignoreId?: string): Promise<string> {
   return slug;
 }
 
+async function unlinkIfUploaded(url: string | null) {
+  if (url?.startsWith('/uploads/')) {
+    await unlink(path.join(UPLOADS_DIR, path.basename(url))).catch(() => {});
+  }
+}
+
 export async function createApp(formData: FormData) {
   const name = (formData.get('name') as string)?.trim();
   const description = ((formData.get('description') as string) ?? '').trim();
@@ -47,10 +60,11 @@ export async function createApp(formData: FormData) {
   if (!name || !externalUrl) throw new Error('이름과 URL은 필수입니다.');
 
   const slug = await uniqueSlug(name);
-  const thumbnailUrl = await resolveThumbnailUrl(formData);
+  const thumbnailUrl = await resolveFileUrl(formData, 'thumbnailFile', 'thumbnailUrl');
+  const downloadUrl = await resolveFileUrl(formData, 'downloadFile', 'downloadUrl');
 
   await prisma.app.create({
-    data: { name, description, externalUrl, sortOrder, slug, thumbnailUrl },
+    data: { name, description, externalUrl, sortOrder, slug, thumbnailUrl, downloadUrl },
   });
 
   revalidatePath('/admin');
@@ -68,11 +82,15 @@ export async function updateApp(id: string, formData: FormData) {
   if (!name || !externalUrl) throw new Error('이름과 URL은 필수입니다.');
 
   const slug = name === existing.name ? existing.slug : await uniqueSlug(name, id);
-  const thumbnailUrl = await resolveThumbnailUrl(formData, existing.thumbnailUrl);
+  const thumbnailUrl = await resolveFileUrl(formData, 'thumbnailFile', 'thumbnailUrl', existing.thumbnailUrl);
+  const downloadUrl = await resolveFileUrl(formData, 'downloadFile', 'downloadUrl', existing.downloadUrl);
+
+  if (thumbnailUrl !== existing.thumbnailUrl) await unlinkIfUploaded(existing.thumbnailUrl);
+  if (downloadUrl !== existing.downloadUrl) await unlinkIfUploaded(existing.downloadUrl);
 
   await prisma.app.update({
     where: { id },
-    data: { name, description, externalUrl, sortOrder, slug, thumbnailUrl },
+    data: { name, description, externalUrl, sortOrder, slug, thumbnailUrl, downloadUrl },
   });
 
   revalidatePath('/admin');
@@ -86,9 +104,8 @@ export async function deleteApp(formData: FormData) {
 
   await prisma.app.delete({ where: { id } });
 
-  if (app.thumbnailUrl?.startsWith('/uploads/')) {
-    await unlink(path.join(UPLOADS_DIR, path.basename(app.thumbnailUrl))).catch(() => {});
-  }
+  await unlinkIfUploaded(app.thumbnailUrl);
+  await unlinkIfUploaded(app.downloadUrl);
 
   revalidatePath('/admin');
   revalidatePath('/');

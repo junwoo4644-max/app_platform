@@ -22,7 +22,12 @@ export default async function HomePage() {
       ) : (
         <div className="app-grid">
           {apps.map((app) => (
-            <a key={app.id} href={app.externalUrl} className="app-card">
+            <a
+              key={app.id}
+              href={app.downloadUrl ?? app.externalUrl}
+              download={app.downloadUrl ? true : undefined}
+              className="app-card"
+            >
               <div
                 className="thumb"
                 style={app.thumbnailUrl ? { backgroundImage: `url(${app.thumbnailUrl})` } : undefined}
@@ -30,6 +35,7 @@ export default async function HomePage() {
                 {!app.thumbnailUrl && app.name.slice(0, 1)}
               </div>
               <div className="meta">
+                {app.downloadUrl && <div className="badge">다운로드</div>}
                 <div className="name">{app.name}</div>
                 <div className="desc">{app.description}</div>
               </div>

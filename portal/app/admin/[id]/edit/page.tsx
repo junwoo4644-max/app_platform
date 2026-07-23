@@ -44,6 +44,22 @@ export default async function EditAppPage({ params }: { params: { id: string } }
           또는 썸네일 이미지 URL 교체 (선택)
           <input name="thumbnailUrl" placeholder="https://..." />
         </label>
+        {app.downloadUrl && (
+          <label>
+            현재 다운로드 파일
+            <a href={app.downloadUrl} target="_blank" rel="noreferrer">
+              {app.downloadUrl}
+            </a>
+          </label>
+        )}
+        <label>
+          새 다운로드 파일 업로드 (선택, 바꿀 때만)
+          <input name="downloadFile" type="file" />
+        </label>
+        <label>
+          또는 다운로드 URL 교체 (선택)
+          <input name="downloadUrl" placeholder="https://..." />
+        </label>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn" type="submit">
             저장

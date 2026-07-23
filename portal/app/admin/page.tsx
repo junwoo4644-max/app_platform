@@ -41,6 +41,14 @@ export default async function AdminPage() {
             또는 썸네일 이미지 URL (선택, 업로드가 없을 때 사용)
             <input name="thumbnailUrl" placeholder="https://..." />
           </label>
+          <label>
+            다운로드 파일 업로드 (선택, zip 등 — 있으면 카드 클릭 시 이동 대신 다운로드)
+            <input name="downloadFile" type="file" />
+          </label>
+          <label>
+            또는 다운로드 URL 직접 입력 (선택, 업로드가 없을 때 사용)
+            <input name="downloadUrl" placeholder="https://..." />
+          </label>
           <button className="btn" type="submit">
             추가
           </button>
@@ -54,6 +62,7 @@ export default async function AdminPage() {
             <th></th>
             <th>이름</th>
             <th>URL</th>
+            <th>다운로드</th>
             <th>순서</th>
             <th>상태</th>
             <th></th>
@@ -68,6 +77,15 @@ export default async function AdminPage() {
                 <a href={app.externalUrl} target="_blank" rel="noreferrer">
                   {app.externalUrl}
                 </a>
+              </td>
+              <td>
+                {app.downloadUrl ? (
+                  <a href={app.downloadUrl} target="_blank" rel="noreferrer">
+                    있음
+                  </a>
+                ) : (
+                  '-'
+                )}
               </td>
               <td>{app.sortOrder}</td>
               <td>{app.isActive ? '표시됨' : '숨김'}</td>

@@ -23,6 +23,9 @@ model App {
   description  String
   thumbnailUrl String?
   externalUrl  String
+  // Set when the app is a local-run download (e.g. a zip bundle) rather than
+  // a hosted service -- clicking the card downloads this instead of navigating.
+  downloadUrl  String?
   sortOrder    Int      @default(0)
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
