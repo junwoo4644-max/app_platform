@@ -15,7 +15,7 @@ export default function TopBar({
   return (
     <div className="topbar">
       <Link href="/" className="topbar-brand">
-        My Apps
+        VHS LAB APPS
       </Link>
       <div className="links">
         {email ? (

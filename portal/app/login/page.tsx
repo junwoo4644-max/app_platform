@@ -45,7 +45,7 @@ function LoginForm() {
 
   return (
     <div className="auth-card">
-      <div className="auth-title">My Apps</div>
+      <div className="auth-title">VHS LAB APPS</div>
       <div className="auth-subtitle">{mode === 'login' ? '로그인하고 앱을 이용하세요' : '계정을 만들고 시작하세요'}</div>
       <form onSubmit={handleSubmit} className="form">
         <input type="email" placeholder="이메일" value={email} onChange={(e) => setEmail(e.target.value)} required />
